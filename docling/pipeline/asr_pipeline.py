@@ -147,6 +147,7 @@ class _NativeWhisperModel:
             self.verbose = asr_options.verbose
             self.timestamps = asr_options.timestamps
             self.word_timestamps = asr_options.word_timestamps
+            self.language = asr_options.language
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         # Access the file path from the backend, similar to how other pipelines handle it
@@ -205,8 +206,14 @@ class _NativeWhisperModel:
                     )
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
+        # Native Whisper needs None for auto-detection, not empty string
+        whisper_language = None if self.language == "" else self.language
+
         result = self.model.transcribe(
-            str(fpath), verbose=self.verbose, word_timestamps=self.word_timestamps
+            str(fpath),
+            verbose=self.verbose,
+            word_timestamps=self.word_timestamps,
+            language=whisper_language,
         )
 
         convo: list[_ConversationItem] = []
@@ -315,10 +322,13 @@ class _MlxWhisperModel:
         Returns:
             List of conversation items with timestamps
         """
+        # MLX Whisper needs None for auto-detection, not empty string
+        mlx_language = None if self.language == "" else self.language
+
         result = self.mlx_whisper.transcribe(
             str(fpath),
             path_or_hf_repo=self.model_path,
-            language=self.language,
+            language=mlx_language,
             task=self.task,
             word_timestamps=self.word_timestamps,
             no_speech_threshold=self.no_speech_threshold,
